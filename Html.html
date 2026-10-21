@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบร้านค้าออนไลน์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Sarabun', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-indigo-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold cursor-pointer" onclick="switchTab('shop')">🛍️ Mini Shop</h1>
+            <div class="space-x-4 flex items-center">
+                <button onclick="switchTab('shop')" class="hover:underline cursor-pointer">หน้าแรก (สินค้า)</button>
+                <button onclick="switchTab('cart')" class="hover:underline cursor-pointer relative">
+                    ตะกร้า <span id="cart-badge" class="bg-red-500 text-xs px-2 py-0.5 rounded-full text-white">0</span>
+                </button>
+                <button onclick="switchTab('admin')" class="bg-indigo-700 px-3 py-1 rounded hover:bg-indigo-800 cursor-pointer">⚙️ หลังบ้านแอดมิน</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto p-4 mt-4">
+
+        <!-- TAB 1: SHOP -->
+        <section id="tab-shop" class="space-y-6">
+            <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+                <h2 class="text-2xl font-bold text-gray-700">รายการสินค้าทั้งหมด</h2>
+                <div class="text-sm text-gray-600">สถานะสมาชิก: <span id="user-count-display" class="font-semibold text-indigo-600">0</span> คน</div>
+            </div>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        </section>
+
+        <!-- TAB 2: CART -->
+        <section id="tab-cart" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-gray-700">ตะกร้าสินค้าของคุณ</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2 bg-white p-4 rounded-lg shadow-sm border">
+                    <div id="cart-items" class="divide-y"></div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border h-fit space-y-4">
+                    <h3 class="text-lg font-bold border-b pb-2">สรุปคำสั่งซื้อ</h3>
+                    <div class="flex justify-between text-lg font-semibold">
+                        <span>ยอดรวมทั้งสิ้น:</span>
+                        <span id="cart-total" class="text-indigo-600">0 บาท</span>
+                    </div>
+                    <button onclick="proceedToCheckout()" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 cursor-pointer">
+                        ยืนยันชำระเงิน
+                    </button>
+                    
+                    <div id="payment-box" class="hidden mt-4 p-4 bg-gray-50 border rounded-lg text-center space-y-3">
+                        <h4 class="font-bold text-gray-700">สแกน QR เพื่อชำระเงิน</h4>
+                        <div class="bg-white p-2 inline-block border rounded shadow-inner">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PromptPay-0812345678" alt="QR Code" class="mx-auto">
+                        </div>
+                        <p class="text-sm text-gray-600">พร้อมเพย์: <span class="font-bold text-black">081-234-5678</span></p>
+                        <p class="text-sm text-gray-600">ธนาคารกสิกรไทย: <span class="font-bold text-black">123-4-56789-0</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: ADMIN -->
+        <section id="tab-admin" class="hidden space-y-8">
+            <!-- ฟอร์มเพิ่มสมาชิก -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <h2 class="text-xl font-bold text-indigo-600 mb-4">⚙️ จัดการสมาชิกในระบบ</h2>
+                <form onsubmit="onAddMember(event)" class="flex gap-4 items-end flex-wrap">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">เพิ่มชื่อสมาชิก:</label>
+                        <input type="text" id="member-input" placeholder="ชื่อสมาชิกใหม่" class="border px-3 py-2 rounded-lg w-64 bg-gray-50" required>
+                    </div>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 cursor-pointer">เพิ่มสมาชิก</button>
+                </form>
+                <p class="text-sm text-gray-500 mt-2">สมาชิกปัจจุบันทั้งหมด: <span id="admin-member-count">0</span> คน</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- ฟอร์มเพิ่มสินค้า -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border h-fit">
+                    <h2 class="text-xl font-bold text-indigo-600 mb-4">➕ เพิ่มสินค้าใหม่</h2>
+                    <form onsubmit="onAddProduct(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">ชื่อสินค้า</label>
+                            <input type="text" id="prod-name" class="w-full border px-3 py-2 rounded-lg bg-gray-50" placeholder="เช่น เสื้อผ้า" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">ราคา (บาท)</label>
+                            <input type="number" id="prod-price" class="w-full border px-3 py-2 rounded-lg bg-gray-50" placeholder="เช่น 290" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">ลิงก์รูปภาพ</label>
+                            <input type="url" id="prod-img" class="w-full border px-3 py-2 rounded-lg bg-gray-50" placeholder="https://...">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 cursor-pointer">บันทึกสินค้า</button>
+                    </form>
+                </div>
+
+                <!-- ตารางสินค้า -->
+                <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-sm border">
+                    <h2 class="text-xl font-bold text-indigo-600 mb-4">📦 รายการสินค้าทั้งหมด</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b bg-gray-100 text-sm">
+                                    <th class="p-3">รูป</th>
+                                    <th class="p-3">ชื่อสินค้า</th>
+                                    <th class="p-3">ราคา</th>
+                                    <th class="p-3 text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-product-table" class="divide-y text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Script -->
+    <script>
+        let products = JSON.parse(localStorage.getItem('shop_products')) || [
+            { id: 1, name: 'เสื้อยืด Oversize', price: 250, image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300' },
+            { id: 2, name: 'กางเกงยีนส์ขายาว', price: 590, image: 'https://images.unsplash.com/photo-1542272604-787c96355d52?w=300' }
+        ];
+
+        let cart = JSON.parse(localStorage.getItem('shop_cart')) || [];
+        let members = JSON.parse(localStorage.getItem('shop_members')) || ['คุณสมชาย', 'คุณสมหญิง'];
+
+        function saveData() {
+            localStorage.setItem('shop_products', JSON.stringify(products));
+            localStorage.setItem('shop_cart', JSON.stringify(cart));
+            localStorage.setItem('shop_members', JSON.stringify(members));
+            render();
+        }
+
+        function switchTab(tabName) {
+            ['shop', 'cart', 'admin'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+            });
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+        }
+
+        function addToCart(id) {
+            const p = products.find(x => x.id === id);
+            if (!p) return;
+            const item = cart.find(x => x.id === id);
+            if (item) item.qty += 1;
+            else cart.push({ ...p, qty: 1 });
+            saveData();
+            alert('เพิ่มลงตะกร้าแล้ว');
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(x => x.id !== id);
+            saveData();
+        }
+
+        function onAddProduct(e) {
+            e.preventDefault();
+            const name = document.getElementById('prod-name').value;
+            const price = parseFloat(document.getElementById('prod-price').value);
+            let image = document.getElementById('prod-img').value;
+
+            if (!image) image = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300';
+
+            products.push({ id: Date.now(), name, price, image });
+            e.target.reset();
+            saveData();
+            alert('เพิ่มสินค้าสำเร็จ!');
+        }
+
+        function deleteProduct(id) {
+            if (confirm('ต้องการลบสินค้านี้?')) {
+                products = products.filter(x => x.id !== id);
+                cart = cart.filter(x => x.id !== id);
+                saveData();
+            }
+        }
+
+        function onAddMember(e) {
+            e.preventDefault();
+            const input = document.getElementById('member-input');
+            const name = input.value.trim();
+            if (name) {
+                members.push(name);
+                input.value = '';
+                saveData();
+                alert('เพิ่มสมาชิกสำเร็จ!');
+            }
+        }
+
+        function proceedToCheckout() {
+            if (cart.length === 0) {
+                alert('ตะกร้าว่างเปล่า');
+                return;
+            }
+            document.getElementById('payment-box').classList.remove('hidden');
+        }
+
+        function render() {
+            // Render Shop
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = products.map(p => `
+                <div class="bg-white border rounded-lg overflow-hidden shadow-sm flex flex-col justify-between">
+                    <img src="${p.image}" class="h-48 w-full object-cover">
+                    <div class="p-4 space-y-2">
+                        <h3 class="font-bold text-lg">${p.name}</h3>
+                        <p class="text-indigo-600 font-semibold">${p.price.toLocaleString()} บาท</p>
+                        <button onclick="addToCart(${p.id})" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 text-sm font-bold cursor-pointer">ใส่ตะกร้า</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render Cart
+            const cartContainer = document.getElementById('cart-items');
+            let total = 0;
+            if (cart.length === 0) {
+                cartContainer.innerHTML = `<p class="p-4 text-gray-500 text-center">ไม่มีสินค้าในตะกร้า</p>`;
+            } else {
+                cartContainer.innerHTML = cart.map(item => {
+                    total += item.price * item.qty;
+                    return `
+                        <div class="flex justify-between items-center p-4">
+                            <div class="flex items-center space-x-4">
+                                <img src="${item.image}" class="w-16 h-16 object-cover rounded">
+                                <div>
+                                    <h4 class="font-bold">${item.name}</h4>
+                                    <p class="text-sm text-gray-500">${item.price.toLocaleString()} ฿ × ${item.qty}</p>
+                                </div>
+                            </div>
+                            <button onclick="removeFromCart(${item.id})" class="text-red-500 hover:underline text-sm cursor-pointer">ลบ</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+            document.getElementById('cart-total').innerText = total.toLocaleString() + ' บาท';
+            document.getElementById('cart-badge').innerText = cart.reduce((sum, i) => sum + i.qty, 0);
+
+            // Render Admin
+            document.getElementById('user-count-display').innerText = members.length;
+            document.getElementById('admin-member-count').innerText = members.length;
+            document.getElementById('admin-product-table').innerHTML = products.map(p => `
+                <tr class="border-b">
+                    <td class="p-3"><img src="${p.image}" class="w-10 h-10 object-cover rounded"></td>
+                    <td class="p-3 font-semibold">${p.name}</td>
+                    <td class="p-3">${p.price.toLocaleString()} ฿</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteProduct(${p.id})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs cursor-pointer">ลบ</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        render();
+    </script>
+</body>
+</html>
